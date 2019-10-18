@@ -49,10 +49,10 @@ if (!program.args.length) {
 }
 
 const STACK_LINE_MATCHERS = [
-  { regex: /^(.*)\@(\d+)\:(\d+)$/, idx: [1, 2, 3] }, // Format: someFun@13:12
-  { regex: /^at (.*)\:(\d+)\:(\d+)$/, idx: [1, 2, 3] }, // Format: at filename:13:12
-  { regex: /^at (.*) \((.*)\:(\d+)\:(\d+)\)$/, idx: [1, 3, 4] }, // Format: at someFun (filename:13:12)
-  { regex: /^at (.*)\:(\d+)$/, idx: [1, 2, 3] }, // Format: at filename:13
+  {regex: /^(.*)\@([-]?\d+)(?:\:(\d+))?$/, idx: [1, 2, 3]}, // Format: someFun@13:12
+  {regex: /^at (.*)\:(\d+)\:(\d+)$/, idx: [1, 2, 3]}, // Format: at filename:13:12
+  {regex: /^at (.*) \((.*)\:(\d+)\:(\d+)\)$/, idx: [1, 3, 4]}, // Format: at someFun (filename:13:12)
+  {regex: /^at (.*)\:(\d+)$/, idx: [1, 2, 3]} // Format: at filename:13
 ];
 
 function main(program) {
@@ -61,7 +61,7 @@ function main(program) {
   const outputFilename = program.output;
 
   const rl = readline.createInterface({
-    input: traceFilename ? fs.createReadStream(traceFilename) : process.stdin,
+    input: traceFilename ? fs.createReadStream(traceFilename) : process.stdin
   });
 
   const sourceMapConsumer = new sourceMap.SourceMapConsumer(
@@ -85,10 +85,12 @@ function main(program) {
 }
 
 function processMatchedLine(match, sourceMapConsumer) {
+  const lineNumber = Number(match.line);
+  let line = !isNaN(lineNumber) && lineNumber > 0 ? lineNumber : 1;
   return sourceMapConsumer.originalPositionFor({
-    line: Number(match.line),
+    line: line,
     column: Number(match.column || 0),
-    name: match.name,
+    name: match.name
   });
 }
 
@@ -101,7 +103,7 @@ function matchStackLine(line) {
     return {
       name: match[found.idx[0]],
       line: match[found.idx[1]],
-      column: match[found.idx[2]],
+      column: match[found.idx[2]]
     };
   }
   return null;
@@ -109,14 +111,20 @@ function matchStackLine(line) {
 
 function processStack(lines, sourceMapConsumer) {
   const result = [];
-  for (let i = 0; i < lines.length; i++) {
+
+  const firstLineOfStack = findStackStart(lines);
+  if (!firstLineOfStack) {
+    throw new Error(`Could not find beginning of stack trace`);
+  }
+
+  for (let i = 0; i < firstLineOfStack; i++) {
+    result.push({text: lines[i]});
+  }
+  for (let i = firstLineOfStack; i < lines.length; i++) {
     const line = lines[i];
     const match = matchStackLine(line);
     if (!match) {
-      if (i === 0) {
-        // we allow first line to contain trace message, we just pass it through to the result table
-        result.push({ text: line });
-      } else if (!line) {
+      if (!line) {
         // we treat empty stack trace line as the end of an input
         break;
       } else {
@@ -139,7 +147,7 @@ function formatStack(lines, shorten) {
         while (
           prefix !== s.slice(0, prefix.length) ||
           prefix.indexOf('node_modules') !== -1
-        ) {
+          ) {
           prefix = prefix.slice(0, -1);
         }
       });
@@ -167,4 +175,15 @@ function formatStack(lines, shorten) {
       }
     })
     .join('\n');
+}
+
+function findStackStart(lines) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (matchStackLine(line)) {
+      return i;
+    }
+  }
+
+  return null;
 }
