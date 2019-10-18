@@ -19,7 +19,7 @@
   },
   "license": "MIT",
   "readmeFilename": "README.md",
-   "bugs": {
+  "bugs": {
     "url": "https://github.com/SoftwareMansion/stack-beautifier/issues"
   },
   "homepage": "https://github.com/SoftwareMansion/stack-beautifier#readme",
