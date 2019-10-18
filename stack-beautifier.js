@@ -49,7 +49,7 @@ if (!program.args.length) {
 }
 
 const STACK_LINE_MATCHERS = [
-  {regex: /^(.*)\@([-]?\d+)(?:\:(\d+))?$/, idx: [1, 2, 3]}, // Format: someFun@13:12
+  {regex: /^(.*)\@(?:-1|(?:(\d+)\:(\d+)))$/, idx: [1, 2, 3]}, // Format: someFun@13:12
   {regex: /^at (.*)\:(\d+)\:(\d+)$/, idx: [1, 2, 3]}, // Format: at filename:13:12
   {regex: /^at (.*) \((.*)\:(\d+)\:(\d+)\)$/, idx: [1, 3, 4]}, // Format: at someFun (filename:13:12)
   {regex: /^at (.*)\:(\d+)$/, idx: [1, 2, 3]} // Format: at filename:13
